@@ -3,9 +3,12 @@ package org.sig.jobs;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+import org.sig.jobs.Commands.AdminCommandHandler;
 import org.sig.jobs.Commands.JobsCommandHandler;
 import org.sig.jobs.Commands.MoneyCommandHandler;
+import org.sig.jobs.Commands.TimeCommandHandler;
 
 import net.minecraft.command.ICommandManager;
 import net.minecraft.command.ServerCommandManager;
@@ -42,10 +45,16 @@ public class main {
 		"GREEN", "Woodcutter"
 	};
 	
+	public static final int BUFF_DAMAGEREDUCTION = 0;
+	public static final int BUFF_DAMAGEINCREASE = 0;
+	
 	public static double STARTMONEY = 100;
 
 	public static final String MODID = "SigJobs";
 	public static final String VERSION = "0.0.1";
+	
+	public static List<PlayerData> PlayerList;
+	public static List<String> AdminList;
 	
 	public static int JOBMAXPLAYERS = 0; //The maximum amount of players that can occupy one job.
 				/*This is a factor of the total number of players that have played on the server.*/
@@ -99,6 +108,45 @@ public class main {
 	public static List<String> JOB_STATINFO13;
 	public static List<String> JOB_INFO14;
 	public static List<String> JOB_STATINFO14;
+	
+	/**
+	 * Returns the PlayerData instance of a player.
+	 * @param id The UUID of the player to search for.
+	 * @return Returns null if this fails.
+	 */
+	public PlayerData getPlayerData(UUID id) {
+		for (PlayerData i : PlayerList) {
+			if (i.getID().equals(id)) {
+				return i;
+			}
+		}
+		/*
+		for (int i=0;i<PlayerList.size();i++) {
+			if (PlayerList.get(i).getID()==id) {
+				return PlayerList.get(i);
+			}
+		}*/
+		return null;
+	}
+	/**
+	 * Returns the PlayerData instance of a player.
+	 * @param name The name of the player. (Case-insensitive)
+	 * @return Returns null if this fails.
+	 */
+	public static PlayerData getPlayerData(String name) {
+		for (PlayerData i : PlayerList) {
+			if (i.getPlayer().getDisplayName().equalsIgnoreCase(name)) {
+				return i;
+			}
+		}
+		/*
+		for (int i=0;i<PlayerList.size();i++) {
+			if (PlayerList.get(i).getPlayer().getDisplayName().equalsIgnoreCase(name)) {
+				return PlayerList.get(i);
+			}
+		}*/
+		return null;
+	}
 	
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent ev) {
@@ -275,9 +323,9 @@ public class main {
 		JOB_STATINFO5.add("Lv40: All foods cooked will provide full health heals when eaten and include a temporary 10 HP shield (30 sec).");
 
 		JOB_INFO6 = new ArrayList<String>();
-		JOB_INFO6.add(EnumChatFormatting.YELLOW+"Cook");
+		JOB_INFO6.add(EnumChatFormatting.GOLD+"Digger");
 		JOB_INFO6.add("");
-		JOB_INFO6.add("A Cook can create delicacies that have interesting effects beyond just keeping yourself full.");
+		JOB_INFO6.add("A Digger");
 		JOB_INFO6.add("");
 		JOB_INFO6.add("COOK:");
 		JOB_INFO6.add("There are a large abundance of foods to create. Ones that have more steps and ingredients give much more than simpler recipes.");
@@ -338,6 +386,9 @@ public class main {
 		JOB_STATINFO14.add("Lv38: -30% damage reduction");
 		JOB_STATINFO14.add("Lv40: Trees can be cut down in one click by right-clicking with an axe.");
 		
+		PlayerList = new ArrayList<PlayerData>();
+		AdminList = new ArrayList<String>();
+		
 		Configuration config = new Configuration(new File("SigJobs.cfg"));
 		config.load(); //Create/load our config.
 		for (int i=0;i<JOBLIMIT.length;i++) {
@@ -348,6 +399,12 @@ public class main {
 		expmult = config.get("SIGJOBS", "XPMULT", expmult).getDouble();
 		baseexp = config.get("SIGJOBS", "BASEXP", baseexp).getInt();
 		startexp = config.get("SIGJOBS", "STARTXP", startexp).getInt();
+		String[] emptyset = {};
+		String[] adminslist = config.get("SIGJOBS", "ADMINS", emptyset).getStringList();
+		for (int i=0;i<adminslist.length;i++) {
+			AdminList.add(adminslist[i]);
+		}
+		
 		
 		config.save(); //Save our config file.
 	}
@@ -356,7 +413,7 @@ public class main {
 	public void init(FMLInitializationEvent ev) {
 		MinecraftForge.EVENT_BUS.register(new BlockBreakHandler());
 		MinecraftForge.EVENT_BUS.register(new EntityHandler());
-		MinecraftForge.EVENT_BUS.register(new Jobs());
+		//MinecraftForge.EVENT_BUS.register(new Jobs());
 	}
 	
 	@EventHandler
@@ -366,6 +423,8 @@ public class main {
 		ServerCommandManager servmanager = (ServerCommandManager)commander;
 		servmanager.registerCommand(new JobsCommandHandler());
 		servmanager.registerCommand(new MoneyCommandHandler());
+		servmanager.registerCommand(new TimeCommandHandler());
+		servmanager.registerCommand(new AdminCommandHandler());
 	}
 	
 	@EventHandler
@@ -375,6 +434,9 @@ public class main {
 		for (int i=0;i<JOBLIMIT.length;i++) {
 			config.get("SIGJOBS", "JOB"+i, 0).set(JOBLIMIT[i]);
 		}
+		String[] emptyset = {};
+		String[] adminlist = AdminList.toArray(new String[AdminList.size()]);
+		config.get("SIGJOBS", "ADMINS", emptyset).set(adminlist);
 		config.save();
 	}
 }
