@@ -54,7 +54,7 @@ public class KeyHandler
 	@SubscribeEvent
 	public void onKeyInput(KeyInputEvent event) {
 		if (!FMLClientHandler.instance().isGUIOpen(GuiChat.class)) {
-			if (keys[CUSTOM_INV].isPressed()) {
+				if (keys[CUSTOM_INV].isPressed()) {
 				EntityPlayer entity = Minecraft.getMinecraft().thePlayer;
 				int i = (int)entity.posX;
 				int j = (int)entity.posY;
